@@ -29,18 +29,15 @@ long_text = """
 # 텍스트를 줄바꿈 문자로 분할
 lines = long_text.strip().split('\n')
 
-# 형태소 분석기를 사용하여 문장 단위로 분할
-sentences = kkma.sentences(long_text)
-
 # 줄바꿈 문자로 분할된 각 줄을 문장 단위로 다시 분할
-sentences = []
+sentence_list = []
 for line in lines:
     line_sentences = kkma.sentences(line)
-    sentences.extend(line_sentences)
+    sentence_list.extend(line_sentences)
 
 # 각 문장을 번역
 # translated_sentences = []
-for sentence in sentences:
+for sentence in sentence_list:
     tokens = tokenizer.encode(sentence, return_tensors="pt", max_length=64, truncation=True)
     output = model.generate(tokens, max_length=64)
     translated_sentence = tokenizer.decode(output[0], skip_special_tokens=True)
