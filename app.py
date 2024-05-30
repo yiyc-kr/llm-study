@@ -12,59 +12,76 @@ model_dir_ko = "ko_en_checkpoint"
 model_dir_en = "en_ko_checkpoint-56250"
 
 # 한국어 및 영어 토크나이저 및 모델 로드
-tokenizer = AutoTokenizer.from_pretrained(model_dir_ko, use_fast=False)
-model = AutoModelForSeq2SeqLM.from_pretrained(model_dir_ko)
-# tokenizer_en = AutoTokenizer.from_pretrained(model_dir_en, use_fast=False)
-# model_en = AutoModelForSeq2SeqLM.from_pretrained(model_dir_en)
-# tokenizer = tokenizer_ko
-# model = model_ko
+tokenizer_ko = AutoTokenizer.from_pretrained(model_dir_ko, use_fast=False)
+model_ko = AutoModelForSeq2SeqLM.from_pretrained(model_dir_ko)
+tokenizer_en = AutoTokenizer.from_pretrained(model_dir_en, use_fast=False)
+model_en = AutoModelForSeq2SeqLM.from_pretrained(model_dir_en)
 
-@app.route('/translate/ko', methods=['POST'])
-def translate():
+# 파일 경로 설정
+original_texts_file_ko = 'original_texts_ko_en.tsv'
+translations_file_ko = 'translations_ko_en.tsv'
+
+def get_split_text(request):
+    # TODO: apply logging
+    # print("DATA:", data)
+    # print("JSON", request.json)
     data = request.json
-    print("DATA:", data)
-    print("JSON", request.json)
     text = data.get('text')
-    # language = data.get('language')  # "ko" 또는 "en"
 
     if not text:
         return jsonify({"error": "Invalid input"}), 400
-
-    # 텍스트를 줄바꿈 문자로 분할
-    lines = text.strip().split('\n')
-    print("TEXT:", text)
-    sentence_list = []
-    for line in lines:
-        line_sentences = kiwi.split_into_sents(line)
-        line_sentences = [sentence[0] for sentence in line_sentences]
-        print("LINE_SENTENCES:", line_sentences)
-        sentence_list.extend(line_sentences)
-
     
+    sentence_list = text.strip().split('\n')
 
-    # elif language == "en":
-    #     sentence_list = []
-    #     for line in lines:
-    #         line_sentences = nltk.sent_tokenize(line)
-    #         sentence_list.extend(line_sentences)
+    return sentence_list
 
-        # tokenizer = tokenizer_en
-        # model = model_en
-    # else:
-    #     return jsonify({"error": "Unsupported language"}), 400
+@app.route('/translate/en', methods=['POST'])
+def translate_en():
+    sentence_list = get_split_text(request)
+
+    splited_sentence_list = []
+    for sentence in sentence_list:
+        splited_list = nltk.sent_tokenize(sentence)
+        splited_list = [sentence[0] for sentence in splited_list]
+        # print("splited_list:", splited_list)
+        splited_sentence_list.extend(splited_list)
+    
+    # 텍스트를 토크나이징하고 모델을 통해 번역 수행
+    translated_list = []
+    # print(splited_sentence_list)
+    for sentence in splited_sentence_list:
+        tokens = tokenizer_en.encode(sentence, return_tensors="pt", max_length=64, truncation=True)
+        output = model_en.generate(tokens, max_length=64)
+        translated_sentence = tokenizer_en.decode(output[0], skip_special_tokens=True)
+        translated_list.append(translated_sentence)
+    
+    print(translated_list)
+    return jsonify({"translated_text": " ".join(translated_list)})
+
+@app.route('/translate/ko', methods=['POST'])
+def translate_ko():
+    sentence_list = get_split_text(request)
+    
+    # print("TEXT:", text)
+    splited_sentence_list = []
+    for sentence in sentence_list:
+        splited_list = kiwi.split_into_sents(sentence)
+        splited_list = [sentence[0] for sentence in splited_list]
+        # print("splited_list:", splited_list)
+        splited_sentence_list.extend(splited_list)
 
     # 텍스트를 토크나이징하고 모델을 통해 번역 수행
-    translated_text = []
-    print(sentence_list)
-    for sentence in sentence_list:
-        tokens = tokenizer.encode(sentence, return_tensors="pt", max_length=64, truncation=True)
-        output = model.generate(tokens, max_length=64)
-        translated_sentence = tokenizer.decode(output[0], skip_special_tokens=True)
-        translated_text.append(translated_sentence)
-        print(translated_sentence)
+    translated_list = []
+    # print(splited_sentence_list)
+    for sentence in splited_sentence_list:
+        tokens = tokenizer_ko.encode(sentence, return_tensors="pt", max_length=64, truncation=True)
+        output = model_ko.generate(tokens, max_length=64)
+        translated_sentence = tokenizer_ko.decode(output[0], skip_special_tokens=True)
+        translated_list.append(translated_sentence)
+        # print(translated_sentence)
     
-    print(translated_text)
-    return jsonify({"translated_text": " ".join(translated_text)})
+    print(translated_list)
+    return jsonify({"translated_text": " ".join(translated_list)})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
