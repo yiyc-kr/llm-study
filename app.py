@@ -1,8 +1,8 @@
 from flask import Flask, request, jsonify
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import torch
-from konlpy.tag import Kkma
-kkma = Kkma()
+from kiwipiepy import Kiwi
+kiwi = Kiwi()
 import nltk
 
 app = Flask(__name__)
@@ -32,10 +32,12 @@ def translate():
 
     # 텍스트를 줄바꿈 문자로 분할
     lines = text.strip().split('\n')
-
+    print("TEXT:", text)
     sentence_list = []
     for line in lines:
-        line_sentences = kkma.sentences(line)
+        line_sentences = kiwi.split_into_sents(line)
+        line_sentences = [sentence[0] for sentence in line_sentences]
+        print("LINE_SENTENCES:", line_sentences)
         sentence_list.extend(line_sentences)
 
     
@@ -62,7 +64,7 @@ def translate():
         print(translated_sentence)
     
     print(translated_text)
-    return jsonify({"translated_text": translated_text})
+    return jsonify({"translated_text": " ".join(translated_text)})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
