@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import torch
 from kiwipiepy import Kiwi
@@ -71,6 +71,10 @@ def get_split_text(request):
 
     return sentence_list
 
+@app.route('/')
+def index():
+    return render_template('index.html')
+
 @app.route('/translate/en', methods=['POST'])
 def translate_en():
     sentence_list = get_split_text(request)
@@ -88,11 +92,11 @@ def translate_en():
         tokens = tokenizer_en.encode(sentence, return_tensors="pt", max_length=64, truncation=True)
         output = model_en.generate(tokens, max_length=64)
         translated_sentence = tokenizer_en.decode(output[0], skip_special_tokens=True)
-        print(sentence)
+        # print(sentence)
         save_translation(sentence, translated_sentence, 'en')
         translated_list.append(translated_sentence)
     
-    print(translated_list)
+    # print(translated_list)
     save_original_text(' '.join(sentence_list), ' '.join(translated_list), 'en')
     return jsonify({"translated_text": " ".join(translated_list)})
 
@@ -119,7 +123,7 @@ def translate_ko():
         translated_list.append(translated_sentence)
         # print(translated_sentence)
     
-    print(translated_list)
+    # print(translated_list)
     save_original_text(' '.join(sentence_list), ' '.join(translated_list), 'ko')
     return jsonify({"translated_text": " ".join(translated_list)})
 
