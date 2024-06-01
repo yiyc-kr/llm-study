@@ -5,8 +5,10 @@ from kiwipiepy import Kiwi
 kiwi = Kiwi()
 import nltk
 import os
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)  # CORS 설정 추가
 
 # 모델 디렉토리 설정
 model_dir_ko = "ko_en_checkpoint"
